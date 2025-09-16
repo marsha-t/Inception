@@ -1,0 +1,87 @@
+version: "3.9"
+
+services:
+  nginx:
+    build:
+      context: .
+      dockerfile: ./requirements/nginx/Dockerfile
+    container_name: nginx
+    env_file:
+      - ./.env
+    volumes:
+      - wordpress:/var/www/html/wordpress
+    ports:
+      - "443:443"
+    networks:
+      - web
+    depends_on:
+      - wordpress
+    restart: always
+
+  wordpress:
+    build:
+      context: .
+      dockerfile: ./requirements/wordpress/Dockerfile
+    container_name: wordpress
+    env_file:
+      - ./.env
+    secrets:
+      - wp_root_password
+      - wp_user_password
+      - db_user_password
+    volumes:
+      - wordpress:/var/www/html/wordpress
+    networks:
+      - web
+    depends_on:
+      - mariadb
+    restart: always
+
+  mariadb:
+    build:
+      context: .
+      dockerfile: ./requirements/mariadb/Dockerfile
+    container_name: mariadb
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    networks:
+      - web
+    env_file:
+      - ./.env
+    secrets:
+      - db_root_password
+      - db_user_password
+    restart: always
+
+
+networks:
+  web:
+    name: Inception
+
+
+volumes:
+  wordpress:
+    name: wordpress
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: bind
+      device: '/home/mateo/data/wordpress'
+  mariadb_data:
+    name: mariadb_data
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: bind
+      device: '/home/mateo/data/mariadb'
+
+
+secrets:
+  wp_root_password:
+    file: ../secrets/wp_root_password.txt
+  wp_user_password:
+    file: ../secrets/wp_user_password.txt
+  db_root_password:
+    file: ../secrets/db_root_password.txt
+  db_user_password:
+    file: ../secrets/db_user_password.txt
